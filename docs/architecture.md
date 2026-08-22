@@ -1,3 +1,4 @@
+
 # Game Architecture
 ## Menu Navigation
 
@@ -7,9 +8,9 @@ stateDiagram
     [*] --> Menu
     Menu --> Settings: sel
     Settings --> Menu : back
-    Menu --> GameN : sel
+    Menu --> Game : sel
     GameN --> Pause : pause
-    Pause --> GameN : unpause
+    Pause --> Game : unpause
     Pause --> Menu : back
     Menu --> [*] : exit
     Pause --> [*] : exit
@@ -23,6 +24,7 @@ stateDiagram
 classDiagram
     class Game {
         -current_scene
+        -settings
         +run()
     }
 
@@ -43,18 +45,18 @@ classDiagram
     class MenuScene{
         
     }
-    class SettingsScene{
-
-    }
     class GameScene{
 
     }
+    class SettingsScene{
 
+    }
 
-    Game --> Scene : current scene
-    Scene <|-- SettingsScene
+    Game --> Scene : current_scene
+    Scene --> Game : ref
     Scene <|-- MenuScene
     Scene <|-- GameScene
-    SettingsScene --> Settings
+    Scene <|-- SettingsScene
+    Game --> Settings : settings
 
 ```
