@@ -8,7 +8,8 @@ from dataclasses import dataclass
 
 import pygame
 
-SAVE_LOCATION = '/home/andorryu/projects/ArcadeCollection/saves/settings.json' # change to Documents\ArcadeCollection\ for windows and
+SAVE_DIR = '/home/andorryu/projects/ArcadeCollection/saves/' # change to Documents\ArcadeCollection\ for windows and
+SAVE_FILE = SAVE_DIR + 'settings.json'
 
 RESOLUTIONS = {
     '1280x720': (1280, 720),
@@ -49,7 +50,7 @@ class Settings:
         adaptive = d['resolution'] == 'adaptive'
 
         self.display = d['display']
-        self.adaptive_resolution = adaptive,
+        self.adaptive_resolution = adaptive
         self.resolution = None if adaptive else tuple[int, int](d['resolution'])
         self.vsync = d['vsync']
         self.fullscreen = d['fullscreen']
@@ -117,21 +118,21 @@ class Settings:
             self.resolution = displays[self.display]
 
     def save(self):
-        with open(SAVE_LOCATION, 'w') as file:
+        with open(SAVE_FILE, 'w') as file:
             json.dump(self._as_dict(), file, indent=4)
 
     def load_and_sync(self):
         '''
-            Loads values from SAVE_LOCATION, fixes bad values, then saves back to file.
+            Loads values from SAVE_DIR, fixes bad values, then saves back to file.
         '''
         try:
-            with open(SAVE_LOCATION, 'r') as file:
+            with open(SAVE_FILE, 'r') as file:
                 self._parse_and_load(json.load(file))
         except json.JSONDecodeError:
             warnings.warn('Json failed to decode. Overwriting save with defaults...')
         except FileNotFoundError:
-            warnings.warn(f'{SAVE_LOCATION} does not exist. Creating it now with default settings...')
-            os.makedirs(SAVE_LOCATION, exist_ok=True)
+            warnings.warn(f'{SAVE_FILE} does not exist. Creating it now with default settings...')
+            os.makedirs(SAVE_DIR, exist_ok=True)
 
         self._check_settings()
         self.set_resolution()
@@ -140,7 +141,7 @@ class Settings:
 # test saving and loading
 if __name__ == "__main__":
     # Settings should be set to defaults and a new directory called "saves/" should be created if it doesn't exist.
-    # Data should be stored in SAVE_LOCATION
+    # Data should be stored in SAVE_DIR
     import time
     pygame.init()
     settings = Settings()

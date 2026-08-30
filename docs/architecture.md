@@ -25,12 +25,19 @@ classDiagram
     class Game {
         -current_scene
         -settings
+
+        +load_scene()
         +run()
+        +quit()
     }
 
     class Settings {
+        +fullscreen
         +resolution
-        +is_fullscreen
+        +...
+
+        +save()
+        +load_and_sync()
     }
 
     class Scene {
