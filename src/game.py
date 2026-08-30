@@ -1,6 +1,5 @@
 
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import pygame
@@ -9,6 +8,7 @@ from src.settings import Settings
 
 if TYPE_CHECKING:
     from src.scenes import Scene
+
 
 class Game:
     def __init__(self) -> None:
@@ -27,7 +27,7 @@ class Game:
         pygame.display.set_caption("Arcade Collection")
 
     def load_scene(self, scene: type[Scene]):
-        self._current_scene = scene(self) # pass game into scene
+        self._current_scene = scene(self)  # pass game into scene
 
     def run(self):
         if self._current_scene is None:

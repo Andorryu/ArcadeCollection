@@ -21,9 +21,7 @@ class Scene(ABC):
             self._handle_event(event)
 
         self._handle_inputs()
-
         self._update(dt)
-
         self._draw()
         pygame.display.flip()
 

@@ -1,12 +1,13 @@
 
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import pygame
-from pygame.event import Event
 
 from src.scenes.scene import Scene
+
+if TYPE_CHECKING:
+    from pygame.event import Event
 
 
 class MainMenu(Scene):
@@ -16,7 +17,7 @@ class MainMenu(Scene):
             # for debug, quit game on esc key
             if key[pygame.K_ESCAPE]:
                 self._game.quit()
-    
+
     def _handle_inputs(self):
         ...
 

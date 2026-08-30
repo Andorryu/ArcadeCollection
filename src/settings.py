@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import pygame
 
-SAVE_DIR = '/home/andorryu/projects/ArcadeCollection/saves/' # change to Documents\ArcadeCollection\ for windows and
+SAVE_DIR = 'C:/Users/adori/Documents/projects/ArcadeCollection/saves/'  # change to special save folder
 SAVE_FILE = SAVE_DIR + 'settings.json'
 
 RESOLUTIONS = {
@@ -21,8 +21,8 @@ RESOLUTIONS = {
 
 @dataclass
 class Settings:
-    display: int = 0 # Which display the game shows on. e.g., 0, 1, 2, ...
-    adaptive_resolution: bool = True # make resolution display's resolution
+    display: int = 0  # Which display the game shows on. e.g., 0, 1, 2, ...
+    adaptive_resolution: bool = True  # make resolution display's resolution
     resolution: tuple[int, int] = None
     vsync: int = 0
     fullscreen: bool = True
@@ -61,7 +61,7 @@ class Settings:
             Checks for invalid game settings, warns, then sets to safe values.
 
             Invalid if:
-            
+
             chosen display does not exist,
             resolution is not set while adaptive resolution is off,
             vsync is an invalid value,
@@ -137,6 +137,7 @@ class Settings:
         self._check_settings()
         self.set_resolution()
         self.save()
+
 
 # test saving and loading
 if __name__ == "__main__":
