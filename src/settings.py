@@ -5,119 +5,152 @@ import json
 import os
 import warnings
 from dataclasses import dataclass
-from enum import Enum
 
 import pygame
 
-SAVE_LOCATION = '/home/andorryu/projects/ArcadeCollection/saves/'
-SAVE_FILENAME = 'settings.json'
+SAVE_LOCATION = '/home/andorryu/projects/ArcadeCollection/saves/settings.json' # change to Documents\ArcadeCollection\ for windows and
 
-
-class Resolution(Enum):
-    HD = (1280, 720)
-    FHD = (1920, 1080)
-    QHD = (2560, 1440)
-    UHD_4K = (3840, 2160)
-
-    def format(self):
-        return f'{self.value[0]}x{self.value[1]}'
-
-
-@dataclass
-class SettingsData:
-    resolution: Resolution = Resolution.HD
-    fullscreen: bool = True
-    vsync: int = 0
-    framerate: float = 60.0
-
-    def as_dict(self) -> dict:
-        return {
-            'resolution': self.resolution.name,
-            'fullscreen': self.fullscreen,
-            'vsync': self.vsync,
-            'framerate': self.framerate,
-        }
-
-    def parse(self, d: dict) -> SettingsData:
-        return SettingsData(
-            resolution=Resolution[d['resolution']],
-            fullscreen=d['fullscreen'],
-            vsync=d['vsync'],
-            framerate=d['framerate'],
-        )
+RESOLUTIONS = {
+    '1280x720': (1280, 720),
+    '1920x1080': (1920, 1080),
+    '2560x1440': (2560, 1440),
+    '3840x2160': (3840, 2160),
+}
 
 
 @dataclass
 class Settings:
-    _save_data_location: str = f'{SAVE_LOCATION}{SAVE_FILENAME}' # change to Documents\ArcadeCollection\ for windows and
-    _data: SettingsData = None
+    display: int = 0 # Which display the game shows on. e.g., 0, 1, 2, ...
+    adaptive_resolution: bool = True # make resolution display's resolution
+    resolution: tuple[int, int] = None
+    vsync: int = 0
+    fullscreen: bool = True
+    framerate: float = 60.0
 
     def __post_init__(self):
-        self._data = SettingsData()
-        self.load() # load data from file
-        if self._data.vsync and not self._data.fullscreen:
-            warnings.warn('Warning: Vsync is on but fullscreen is not. Silently turning fullscreen on.')
-            self._data.fullscreen = True
+        self.load_and_sync()
 
-    def save(self):
-        with open(self._save_data_location, 'w') as file:
-            json.dump(self._data.as_dict(), file, indent=4)
+    def _as_dict(self) -> dict:
+        """
+            Sets settings data in dictionary format, to be saved in json format.
+        """
+        return {
+            'display': self.display,
+            'resolution': 'adaptive' if self.adaptive_resolution else self.resolution,
+            'vsync': self.vsync,
+            'fullscreen': self.fullscreen,
+            'framerate': self.framerate,
+        }
 
-    def load(self):
-        try:
-            with open(self._save_data_location, 'r') as file:
-                self._data = SettingsData(self._data.parse(json.load(file)))
-        except json.JSONDecodeError:
-            print('Warning: Json failed to decode. Overwriting save with defaults.')
-            self.save()
-        except FileNotFoundError:
-            print(f'Warning: {self._save_data_location} does not exist. Creating it now.')
-            os.makedirs(SAVE_LOCATION, exist_ok=True)
-            self.save()
+    def _parse_and_load(self, d: dict):
+        """
+            Parses json formatted settings data, and loads it.
+        """
+        adaptive = d['resolution'] == 'adaptive'
+
+        self.display = d['display']
+        self.adaptive_resolution = adaptive,
+        self.resolution = None if adaptive else tuple[int, int](d['resolution'])
+        self.vsync = d['vsync']
+        self.fullscreen = d['fullscreen']
+        self.framerate = d['framerate']
+
+    def _check_settings(self):
+        """
+            Checks for invalid game settings, warns, then sets to safe values.
+
+            Invalid if:
+            
+            chosen display does not exist,
+            resolution is not set while adaptive resolution is off,
+            vsync is an invalid value,
+            vsync is on but fullscreen isn't,
+            framerate is not positive,
+
+            Warns but does not fix if:
+            resolution is an unusual value.
+        """
+        displays = pygame.display.get_desktop_sizes()
+
+        # display
+        if self.display >= len(displays) or self.display < 0:
+            warnings.warn(f'Display is set to invalid value of {self.display} (there are {len(displays)} displays available). Defaulting to display 0...')
+            self.display = 0
+
+        # resolution
+        if self.resolution is None:
+            if not self.adaptive_resolution:
+                warnings.warn('Non-adaptive resolution is "None". Making it adaptive...')
+                self.adaptive_resolution = True
+        else:
+            if self.resolution[0] < 0 or self.resolution[1] < 0:
+                warnings.warn('Resolution has negative values. Setting it to default of 1280x720...')
+                self.resolution = RESOLUTIONS['1280x720']
+            if self.resolution not in RESOLUTIONS.values():
+                warnings.warn(f'Resolution is set to unusual value of {self.resolution[0]}x{self.resolution[1]}.')
+                print(self.resolution)
+
+        # vsync & fullscreen
+        if self.vsync not in [-1, 0, 1]:
+            warnings.warn('Vsync set to invalid value. Setting it to 0...')
+            self.vsync = 0
+        if self.vsync and not self.fullscreen:
+            warnings.warn('Vsync is on but fullscreen is not. Turning fullscreen on...')
+            self.fullscreen = True
+
+        # framerate
+        if self.framerate < 0.0:
+            warnings.warn('Framerate is an impossible value. Setting to default of 60...')
+            self.framerate = 60.0
 
     def build_flags(self):
-        if self._data.vsync not in [-1, 0, 1]:
-            raise ValueError("ERROR: vsync must be set to -1, 0, 1.")
-
         flags = 0
-        if self._data.fullscreen:
+        if self.fullscreen:
             flags |= pygame.FULLSCREEN | pygame.SCALED
-        if self._data.vsync:
+        if self.vsync:
             flags |= pygame.SCALED
-
         return flags
 
-    # setter
-    def set_data(
-        self,
-        resolution: Resolution | None = None,
-        fullscreen: bool       | None = None,
-        vsync:      int        | None = None,
-        framerate:  float      | None = None,
-    ):
-        self._data.resolution = resolution if resolution is not None else self._data.resolution
-        self._data.fullscreen = fullscreen if fullscreen is not None else self._data.fullscreen
-        self._data.vsync      = vsync      if vsync      is not None else self._data.vsync
-        self._data.framerate  = framerate  if framerate  is not None else self._data.framerate
+    def set_resolution(self):
+        displays = pygame.display.get_desktop_sizes()
+        if self.adaptive_resolution:
+            self.resolution = displays[self.display]
+
+    def save(self):
+        with open(SAVE_LOCATION, 'w') as file:
+            json.dump(self._as_dict(), file, indent=4)
+
+    def load_and_sync(self):
+        '''
+            Loads values from SAVE_LOCATION, fixes bad values, then saves back to file.
+        '''
+        try:
+            with open(SAVE_LOCATION, 'r') as file:
+                self._parse_and_load(json.load(file))
+        except json.JSONDecodeError:
+            warnings.warn('Json failed to decode. Overwriting save with defaults...')
+        except FileNotFoundError:
+            warnings.warn(f'{SAVE_LOCATION} does not exist. Creating it now with default settings...')
+            os.makedirs(SAVE_LOCATION, exist_ok=True)
+
+        self._check_settings()
+        self.set_resolution()
         self.save()
-
-    # getter
-    def get_data(self) -> SettingsData:
-        return self._data
-
 
 # test saving and loading
 if __name__ == "__main__":
     # Settings should be set to defaults and a new directory called "saves/" should be created if it doesn't exist.
-    # Data should be stored in ./saves/settings.json
+    # Data should be stored in SAVE_LOCATION
     import time
+    pygame.init()
     settings = Settings()
+    pygame.display.set_mode(settings.resolution)
     print('Saved initial settings!')
     time.sleep(5)
-    # Change settings data. It should save it to the save file
-    settings.set_data(
-        resolution=Resolution.QHD,
-        fullscreen=False,
-        framerate=150.0,
-    )
+    # Change settings data. It should save to the save file
+    settings.adaptive_resolution = False
+    settings.resolution = RESOLUTIONS['1280x720']
+    settings.fullscreen = False
+    settings.save()
     print('Saved new settings!')
+    pygame.quit()

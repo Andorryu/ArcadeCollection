@@ -18,26 +18,24 @@ class Game:
         self._clock = pygame.time.Clock()
 
         pygame.display.set_mode(
-            size=self._settings.get_data().resolution.value,
+            size=self._settings.resolution,
             flags=self._settings.build_flags(),
-            vsync=self._settings._data.vsync,
+            vsync=self._settings.vsync,
+            display=self._settings.display,
         )
 
         pygame.display.set_caption("Arcade Collection")
 
-    def load_scene(self, scene: Scene):
-        self._current_scene = scene
+    def load_scene(self, scene: type[Scene]):
+        self._current_scene = scene(self) # pass game into scene
 
     def run(self):
         if self._current_scene is None:
-            raise ValueError("ERROR: Attempted to run game without loading a scene!")
+            raise ValueError("Attempted to run game without loading a scene!")
 
-        # call tick without framerate if vsync is active so that vsync doesn't fight pygame's framerate assertion
-        fps = 0 if self._settings._data.vsync else self._settings._data.framerate
-
+        fps = self._settings.framerate if self._settings.vsync else 0.0
         while self._running:
             dt = self._clock.tick(fps) / 1000.0
-
             self._current_scene.tick(dt)
 
     def quit(self):

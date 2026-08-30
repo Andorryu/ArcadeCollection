@@ -14,7 +14,7 @@ class Scene(ABC):
     def __init__(self, game: Game) -> None:
         self._game = game
 
-    def tick(self, dt):
+    def tick(self, dt: float):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self._game.quit()
